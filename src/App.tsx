@@ -13,7 +13,7 @@ export default function App() {
 
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('tp_dark')
-    return stored === null ? true : stored === 'true'
+    return stored === null ? false : stored === 'true'
   })
 
   useEffect(() => {

@@ -9,9 +9,10 @@ interface Props {
   entry: DayEntry
   isCurrentWeek: boolean
   isCurrentDay: boolean
+  phaseRingClass: string
 }
 
-export default function DayCell({ cellId, entry, isCurrentWeek, isCurrentDay }: Props) {
+export default function DayCell({ cellId, entry, isCurrentWeek, isCurrentDay, phaseRingClass }: Props) {
   const doneCells = useStore(s => s.doneCells)
   const editedCells = useStore(s => s.editedCells)
   const toggleDone = useStore(s => s.toggleDone)
@@ -45,7 +46,7 @@ export default function DayCell({ cellId, entry, isCurrentWeek, isCurrentDay }: 
             ? 'bg-emerald-50/80 dark:bg-emerald-950/40 hover:bg-emerald-100/80 dark:hover:bg-emerald-950/60'
             : 'hover:bg-gray-100/60 dark:hover:bg-zinc-800/40',
           isToday
-            ? 'ring-2 ring-inset ring-indigo-400/70 dark:ring-indigo-500/60'
+            ? phaseRingClass
             : isCurrentWeek
             ? 'border-l border-l-indigo-200 dark:border-l-indigo-800/60'
             : '',

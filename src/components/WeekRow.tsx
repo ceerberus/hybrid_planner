@@ -2,6 +2,14 @@ import type { Week, DayKey } from '../data/weeks'
 import { DAYS, getCellId } from '../data/weeks'
 import DayCell from './DayCell'
 
+const PHASE_RING: Record<number, string> = {
+  1: 'ring-2 ring-inset ring-sky-400/70 dark:ring-sky-500/60',
+  2: 'ring-2 ring-inset ring-emerald-400/70 dark:ring-emerald-500/60',
+  3: 'ring-2 ring-inset ring-violet-400/70 dark:ring-violet-500/60',
+  4: 'ring-2 ring-inset ring-orange-400/70 dark:ring-orange-500/60',
+  5: 'ring-2 ring-inset ring-rose-400/70 dark:ring-rose-500/60',
+}
+
 interface Props {
   week: Week
   currentWeekId: string
@@ -10,6 +18,7 @@ interface Props {
 
 export default function WeekRow({ week, currentWeekId, currentDay }: Props) {
   const isCurrentWeek = week.id === currentWeekId
+  const phaseRingClass = PHASE_RING[week.phase] ?? PHASE_RING[1]
 
   return (
     <tr>
@@ -54,6 +63,7 @@ export default function WeekRow({ week, currentWeekId, currentDay }: Props) {
           entry={week.days[day]}
           isCurrentWeek={isCurrentWeek}
           isCurrentDay={day === currentDay}
+          phaseRingClass={phaseRingClass}
         />
       ))}
     </tr>
