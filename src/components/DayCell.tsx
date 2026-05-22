@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { DayEntry } from '../data/weeks'
 import { useStore } from '../store/useStore'
 import TypeBadge from './TypeBadge'
@@ -28,9 +28,37 @@ export default function DayCell({ cellId, entry, isCurrentWeek, isCurrentDay, ph
   // Only highlight today's exact cell (current week + current day)
   const isToday = isCurrentWeek && isCurrentDay
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressFired = useRef(false)
+
   function handleContextMenu(e: React.MouseEvent) {
     e.preventDefault()
     setShowModal(true)
+  }
+
+  function handleTouchStart() {
+    longPressFired.current = false
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true
+      setShowModal(true)
+    }, 500)
+  }
+
+  function handleTouchMove() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+    if (longPressFired.current) {
+      e.preventDefault()
+    }
   }
 
   return (
@@ -38,6 +66,9 @@ export default function DayCell({ cellId, entry, isCurrentWeek, isCurrentDay, ph
       <td
         onClick={() => toggleDone(cellId)}
         onContextMenu={handleContextMenu}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         className={[
           'px-3 py-2.5 text-left align-top cursor-pointer select-none transition-colors duration-150',
           'min-w-[160px] max-w-[220px]',
