@@ -3,6 +3,7 @@ import { useStore } from './store/useStore'
 import WelcomeScreen from './components/WelcomeScreen'
 import TopBar from './components/TopBar'
 import PhaseSection from './components/PhaseSection'
+import ChatDrawer from './components/ChatDrawer'
 import { weeks, PHASE_NAMES, getCurrentWeekId, getCurrentDay } from './data/weeks'
 
 export default function App() {
@@ -78,6 +79,7 @@ export default function App() {
       </div>
 
       <div className="h-8" />
+      <ChatDrawer />
     </div>
   )
 }

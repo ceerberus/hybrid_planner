@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { fetchState, upsertState, deleteState } from '../lib/supabase'
-import type { CellEdit } from '../types'
+import type { CellEdit, PlanAction } from '../types'
 
 const LS_USERNAME = 'tp_username'
 const LS_DONE = 'tp_done_cells'
@@ -24,6 +24,7 @@ interface AppState {
   persistToRemote: () => void
   resetData: () => Promise<void>
   togglePhase: (phase: number) => void
+  applyActions: (actions: PlanAction[]) => void
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -152,5 +153,15 @@ export const useStore = create<AppState>((set, get) => ({
     if (next.has(phase)) next.delete(phase)
     else next.add(phase)
     set({ collapsedPhases: next })
+  },
+
+  applyActions(actions) {
+    for (const a of actions) {
+      if (a.action === 'edit_cell') {
+        get().editCell(a.cellId, { title: a.text, detail: a.detail })
+      } else if (a.action === 'toggle_done') {
+        get().toggleDone(a.cellId)
+      }
+    }
   },
 }))
