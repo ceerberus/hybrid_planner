@@ -10,6 +10,7 @@ const TYPE_OPTIONS = [
   { value: 'long_run', label: 'Long Run' },
   { value: 'easy', label: 'Easy' },
   { value: 'rest', label: 'Rest' },
+  { value: 'krank', label: 'Krank' },
   { value: 'race', label: 'Race' },
   { value: '__custom__', label: 'Eigenes Label…' },
 ]
@@ -66,7 +67,7 @@ export default function EditModal({ cellId, entry, onClose }: Props) {
     editCell(cellId, {
       type: effectiveType || entry.type,
       title: title.trim() || entry.title,
-      detail: detail.trim() || undefined,
+      detail: detail.trim(),
     })
     onClose()
   }

@@ -23,7 +23,7 @@ export default function DayCell({ cellId, entry, isCurrentWeek, isCurrentDay, ph
 
   const displayType = edit?.type ?? entry.type
   const displayTitle = edit?.title ?? entry.title
-  const displayDetail = edit?.detail ?? entry.detail
+  const displayDetail = edit ? edit.detail : entry.detail
 
   // Only highlight today's exact cell (current week + current day)
   const isToday = isCurrentWeek && isCurrentDay

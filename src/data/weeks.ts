@@ -9,6 +9,7 @@ export type WorkoutType =
   | 'easy'
   | 'rest'
   | 'race'
+  | 'krank'
 
 export interface DayEntry {
   type: WorkoutType
