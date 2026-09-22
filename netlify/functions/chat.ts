@@ -1,9 +1,11 @@
 // GROQ_API_KEY must be set in Netlify Dashboard → Site settings → Environment variables
 
-import { weeks, PHASE_NAMES, DAYS, DAY_LABELS } from '../../src/data/weeks'
+import { seedWeeks, PHASE_NAMES, DAYS, DAY_LABELS, type Week } from '../../src/data/weeks'
 
 interface SystemContext {
   username: string
+  blockName?: string
+  weeks?: Week[]
   currentWeek: string
   currentDate: string
   doneCells: string[]
@@ -15,7 +17,7 @@ interface ChatRequest {
   systemContext: SystemContext
 }
 
-function buildPlanText(): string {
+function buildPlanText(weeks: Week[]): string {
   const lines: string[] = []
   let lastPhase = 0
   for (const week of weeks) {
@@ -34,9 +36,9 @@ function buildPlanText(): string {
   return lines.join('\n')
 }
 
-const PLAN_TEXT = buildPlanText()
-
 function buildSystemPrompt(ctx: SystemContext): string {
+  const planWeeks = ctx.weeks && ctx.weeks.length > 0 ? ctx.weeks : seedWeeks
+  const planText = buildPlanText(planWeeks)
   const done = ctx.doneCells.length > 0 ? ctx.doneCells.join(', ') : 'keine'
   const edited =
     Object.keys(ctx.editedCells).length > 0
@@ -48,10 +50,11 @@ function buildSystemPrompt(ctx: SystemContext): string {
   return `Du bist ein persönlicher Trainingsassistent für ${ctx.username}.
 
 Aktuelles Datum: ${ctx.currentDate}
+Aktueller Trainingsblock: ${ctx.blockName ?? 'Trainingsplan'}
 Aktuelle Woche im Plan: ${ctx.currentWeek}
 
 VOLLSTÄNDIGER TRAININGSPLAN:
-${PLAN_TEXT}
+${planText}
 
 AKTUELLER FORTSCHRITT:
 Abgehakte Einheiten: ${done}

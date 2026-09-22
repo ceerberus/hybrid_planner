@@ -1,4 +1,6 @@
 import type { WorkoutType } from '../data/weeks'
+import { useStore } from '../store/useStore'
+import { getColorOption } from '../lib/customTypes'
 
 const CONFIG: Record<WorkoutType, { label: string; className: string }> = {
   gym_ok: { label: 'Gym OK', className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30' },
@@ -17,6 +19,8 @@ interface Props {
 }
 
 export default function TypeBadge({ type }: Props) {
+  const customTypes = useStore(s => s.customTypes)
+
   const config = CONFIG[type as WorkoutType]
   if (config) {
     return (
@@ -25,7 +29,18 @@ export default function TypeBadge({ type }: Props) {
       </span>
     )
   }
-  // Custom label
+
+  const custom = customTypes.find(ct => ct.id === type)
+  if (custom) {
+    const { badgeClass } = getColorOption(custom.color)
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${badgeClass} leading-none`}>
+        {custom.label}
+      </span>
+    )
+  }
+
+  // Unknown/legacy custom label with no saved color
   return (
     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-500/20 dark:text-zinc-300 dark:border-zinc-500/30 leading-none">
       {type}

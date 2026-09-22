@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { getCurrentWeekId } from '../data/weeks'
 import type { PlanAction } from '../types'
+import type { TrainingBlock } from '../lib/blocks'
 
 export interface ChatMessage {
   id: string
@@ -33,6 +34,7 @@ export function useChat() {
   const doneCells = useStore(s => s.doneCells)
   const editedCells = useStore(s => s.editedCells)
   const applyActions = useStore(s => s.applyActions)
+  const block: TrainingBlock = useStore(s => s.activeBlock())
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -49,7 +51,9 @@ export function useChat() {
             messages: history.map(m => ({ role: m.role, content: m.content })),
             systemContext: {
               username: username ?? 'Anonym',
-              currentWeek: getCurrentWeekId(),
+              blockName: block.name,
+              weeks: block.weeks,
+              currentWeek: getCurrentWeekId(block.weeks),
               currentDate: new Date().toLocaleDateString('de-DE'),
               doneCells: Array.from(doneCells),
               editedCells,
@@ -82,7 +86,7 @@ export function useChat() {
         setIsLoading(false)
       }
     },
-    [username, doneCells, editedCells]
+    [username, doneCells, editedCells, block]
   )
 
   const confirmActions = useCallback(

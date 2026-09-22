@@ -5,6 +5,9 @@
     username text primary key,
     done_cells jsonb not null default '[]',
     edited_cells jsonb not null default '{}',
+    blocks jsonb not null default '[]',
+    active_block_id text,
+    custom_types jsonb not null default '[]',
     updated_at timestamptz not null default now()
   );
 
@@ -12,6 +15,11 @@
   alter table training_state enable row level security;
   create policy "public read/write" on training_state
     for all using (true) with check (true);
+
+  -- Migrating an existing table (already had done_cells/edited_cells):
+  alter table training_state add column if not exists blocks jsonb not null default '[]';
+  alter table training_state add column if not exists active_block_id text;
+  alter table training_state add column if not exists custom_types jsonb not null default '[]';
 */
 
 import { createClient } from '@supabase/supabase-js'
@@ -24,12 +32,15 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 export interface RemoteState {
   done_cells: string[]
   edited_cells: Record<string, unknown>
+  blocks: unknown[]
+  active_block_id: string | null
+  custom_types: unknown[]
 }
 
 export async function fetchState(username: string): Promise<RemoteState | null> {
   const { data, error } = await supabase
     .from('training_state')
-    .select('done_cells, edited_cells')
+    .select('done_cells, edited_cells, blocks, active_block_id, custom_types')
     .eq('username', username)
     .single()
 
@@ -44,23 +55,21 @@ export async function upsertState(
   username: string,
   doneCells: string[],
   editedCells: Record<string, unknown>,
+  blocks: unknown[],
+  activeBlockId: string | null,
+  customTypes: unknown[],
 ): Promise<void> {
   const { error } = await supabase.from('training_state').upsert(
     {
       username,
       done_cells: doneCells,
       edited_cells: editedCells,
+      blocks,
+      active_block_id: activeBlockId,
+      custom_types: customTypes,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'username' },
   )
-  if (error) throw error
-}
-
-export async function deleteState(username: string): Promise<void> {
-  const { error } = await supabase
-    .from('training_state')
-    .delete()
-    .eq('username', username)
   if (error) throw error
 }

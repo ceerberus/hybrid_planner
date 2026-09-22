@@ -21,6 +21,8 @@ export interface Week {
   id: string
   label: string
   dateRange: string
+  /** ISO date (yyyy-mm-dd) of the Monday this week starts on. Used for reliable "current week" detection across years. */
+  startISO?: string
   phase: number
   phaseName: string
   isDeload?: boolean
@@ -48,7 +50,11 @@ export const PHASE_NAMES: Record<number, string> = {
   5: 'Tapering',
 }
 
-export const weeks: Week[] = [
+/**
+ * The original, hand-crafted 18-week half-marathon block. Kept as the seed block so
+ * existing progress (doneCells/editedCells keyed by e.g. "W1_mo") keeps working unchanged.
+ */
+export const seedWeeks: Week[] = [
   // ── Phase 1 – Basis ──────────────────────────────────────────────────────
   {
     id: 'W1',
@@ -355,8 +361,6 @@ export const weeks: Week[] = [
   },
 ]
 
-export const TOTAL_CELLS = weeks.length * 7
-
 export function getCellId(weekId: string, day: DayKey): string {
   return `${weekId}_${day}`
 }
@@ -368,17 +372,30 @@ export function getCurrentDay(): DayKey | null {
   return map[new Date().getDay()] ?? null
 }
 
-export function getCurrentWeekId(): string {
+/** Finds the week containing "now" within the given week list. Falls back to the closest edge week. */
+export function getCurrentWeekId(weeks: Week[]): string {
   const now = new Date()
+  now.setHours(0, 0, 0, 0)
+
   for (const week of weeks) {
-    const [startStr] = week.dateRange.split('–')
-    const parts = startStr.split('.')
-    const year = 2026
-    const d = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]))
-    const end = new Date(d)
+    let start: Date
+    if (week.startISO) {
+      start = new Date(week.startISO + 'T00:00:00')
+    } else {
+      // Legacy seed weeks: dateRange is "dd.mm–dd.mm" with an implied year.
+      const [startStr] = week.dateRange.split('–')
+      const [dd, mm] = startStr.split('.')
+      start = new Date(2026, parseInt(mm) - 1, parseInt(dd))
+    }
+    const end = new Date(start)
     end.setDate(end.getDate() + 6)
-    if (now >= d && now <= end) return week.id
+    if (now >= start && now <= end) return week.id
   }
-  if (now < new Date(2026, 4, 18)) return 'W1'
-  return 'W18'
+
+  if (weeks.length === 0) return ''
+  const first = weeks[0]
+  const firstStart = first.startISO
+    ? new Date(first.startISO + 'T00:00:00')
+    : new Date(2026, parseInt(first.dateRange.split('–')[0].split('.')[1]) - 1, parseInt(first.dateRange.split('–')[0].split('.')[0]))
+  return now < firstStart ? first.id : weeks[weeks.length - 1].id
 }

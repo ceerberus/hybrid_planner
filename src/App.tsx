@@ -4,13 +4,18 @@ import WelcomeScreen from './components/WelcomeScreen'
 import TopBar from './components/TopBar'
 import PhaseSection from './components/PhaseSection'
 import ChatDrawer from './components/ChatDrawer'
-import { weeks, PHASE_NAMES, getCurrentWeekId, getCurrentDay } from './data/weeks'
+import BlockOverview from './components/BlockOverview'
+import NewBlockModal from './components/NewBlockModal'
+import { PHASE_NAMES, getCurrentWeekId, getCurrentDay } from './data/weeks'
 
 export default function App() {
   const username = useStore(s => s.username)
   const loadFromRemote = useStore(s => s.loadFromRemote)
   const isOffline = useStore(s => s.isOffline)
   const clearUsername = useStore(s => s.clearUsername)
+  const view = useStore(s => s.view)
+  const block = useStore(s => s.activeBlock())
+  const showNewBlockModal = useStore(s => s.showNewBlockModal)
 
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('tp_dark')
@@ -36,15 +41,16 @@ export default function App() {
     return <WelcomeScreen />
   }
 
-  const currentWeekId = getCurrentWeekId()
+  const currentWeekId = getCurrentWeekId(block.weeks)
   const currentDay = getCurrentDay()
 
   const phases = Object.keys(PHASE_NAMES)
     .map(Number)
     .map(phase => ({
       phase,
-      weeks: weeks.filter(w => w.phase === phase),
+      weeks: block.weeks.filter(w => w.phase === phase),
     }))
+    .filter(p => p.weeks.length > 0)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans transition-colors duration-200">
@@ -62,24 +68,30 @@ export default function App() {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <tbody>
-            {phases.map(({ phase, weeks: phaseWeeks }) => (
-              <PhaseSection
-                key={phase}
-                phase={phase}
-                weeks={phaseWeeks}
-                currentWeekId={currentWeekId}
-                currentDay={currentDay}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {view === 'overview' ? (
+        <BlockOverview />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <tbody>
+              {phases.map(({ phase, weeks: phaseWeeks }) => (
+                <PhaseSection
+                  key={phase}
+                  phase={phase}
+                  weeks={phaseWeeks}
+                  currentWeekId={currentWeekId}
+                  currentDay={currentDay}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="h-8" />
       <ChatDrawer />
+
+      {showNewBlockModal && <NewBlockModal />}
     </div>
   )
 }

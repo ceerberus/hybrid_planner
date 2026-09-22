@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore'
 import type { DayEntry } from '../data/weeks'
+import { COLOR_PALETTE, getColorOption, slugifyCustomTypeId } from '../lib/customTypes'
 
-const TYPE_OPTIONS = [
+const BUILTIN_TYPE_OPTIONS = [
   { value: 'gym_ok', label: 'Gym OK' },
   { value: 'gym_uk', label: 'Gym UK' },
   { value: 'intervalle', label: 'Intervall' },
@@ -12,10 +13,7 @@ const TYPE_OPTIONS = [
   { value: 'rest', label: 'Rest' },
   { value: 'krank', label: 'Krank' },
   { value: 'race', label: 'Race' },
-  { value: '__custom__', label: 'Eigenes Label…' },
 ]
-
-const PREDEFINED_VALUES = TYPE_OPTIONS.filter(o => o.value !== '__custom__').map(o => o.value)
 
 interface Props {
   cellId: string
@@ -26,13 +24,24 @@ interface Props {
 export default function EditModal({ cellId, entry, onClose }: Props) {
   const editCell = useStore(s => s.editCell)
   const editedCells = useStore(s => s.editedCells)
+  const customTypes = useStore(s => s.customTypes)
+  const addCustomType = useStore(s => s.addCustomType)
   const existing = editedCells[cellId]
 
+  const typeOptions = [
+    ...BUILTIN_TYPE_OPTIONS,
+    ...customTypes.map(ct => ({ value: ct.id, label: ct.label })),
+    { value: '__custom__', label: 'Eigenes Label…' },
+  ]
+  const predefinedValues = [...BUILTIN_TYPE_OPTIONS.map(o => o.value), ...customTypes.map(ct => ct.id)]
+
   const initialType = existing?.type ?? entry.type
-  const isCustomInitially = !PREDEFINED_VALUES.includes(initialType)
+  const isCustomInitially = !predefinedValues.includes(initialType)
+  const initialCustomType = customTypes.find(ct => ct.id === initialType)
 
   const [selectValue, setSelectValue] = useState(isCustomInitially ? '__custom__' : initialType)
   const [customLabel, setCustomLabel] = useState(isCustomInitially ? initialType : '')
+  const [color, setColor] = useState(initialCustomType?.color ?? COLOR_PALETTE[0].key)
   const [title, setTitle] = useState(existing?.title ?? entry.title)
   const [detail, setDetail] = useState(existing?.detail ?? entry.detail ?? '')
 
@@ -50,11 +59,26 @@ export default function EditModal({ cellId, entry, onClose }: Props) {
     }
   }, [selectValue])
 
-  const isCustom = selectValue === '__custom__'
-  const effectiveType = isCustom ? customLabel.trim() : selectValue
+  const isCreatingCustom = selectValue === '__custom__'
+  const previewBadgeClass = getColorOption(color).badgeClass
 
   function handleSave() {
-    const typeChanged = effectiveType && effectiveType !== entry.type
+    let effectiveType = selectValue
+
+    if (isCreatingCustom) {
+      const label = customLabel.trim()
+      if (label) {
+        const id = slugifyCustomTypeId(label)
+        if (!customTypes.some(ct => ct.id === id)) {
+          addCustomType({ id, label, color })
+        }
+        effectiveType = id
+      } else {
+        effectiveType = entry.type
+      }
+    }
+
+    const typeChanged = effectiveType !== entry.type
     const titleChanged = title.trim() !== entry.title
     const detailChanged = detail.trim() !== (entry.detail ?? '')
 
@@ -100,19 +124,55 @@ export default function EditModal({ cellId, entry, onClose }: Props) {
               onChange={e => setSelectValue(e.target.value)}
               className="w-full px-3 py-2 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none cursor-pointer"
             >
-              {TYPE_OPTIONS.map(opt => (
+              {typeOptions.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            {isCustom && (
-              <input
-                ref={customRef}
-                type="text"
-                value={customLabel}
-                onChange={e => setCustomLabel(e.target.value)}
-                placeholder="Eigenes Label eingeben…"
-                className="w-full mt-2 px-3 py-2 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              />
+
+            {isCreatingCustom && (
+              <div className="mt-2.5 space-y-2.5">
+                <input
+                  ref={customRef}
+                  type="text"
+                  value={customLabel}
+                  onChange={e => setCustomLabel(e.target.value)}
+                  placeholder="Eigenes Label eingeben…"
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                />
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] text-gray-400 dark:text-zinc-500">Farbe</span>
+                    {customLabel.trim() && (
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${previewBadgeClass} leading-none`}>
+                        {customLabel.trim()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {COLOR_PALETTE.map(opt => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setColor(opt.key)}
+                        aria-label={opt.key}
+                        title={opt.key}
+                        className={[
+                          'w-6 h-6 rounded-full transition-all',
+                          opt.swatchClass,
+                          color === opt.key
+                            ? 'ring-2 ring-offset-2 ring-gray-800 dark:ring-white ring-offset-white dark:ring-offset-zinc-900 scale-110'
+                            : 'hover:scale-110 opacity-80 hover:opacity-100',
+                        ].join(' ')}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-gray-400 dark:text-zinc-500">
+                  Wird nach dem Speichern dauerhaft in der Label-Liste verfügbar sein.
+                </p>
+              </div>
             )}
           </div>
 
